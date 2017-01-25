@@ -1,8 +1,10 @@
 package org.usfirst.frc.team815.robot;
 
+import edu.wpi.first.wpilibj.AnalogGyro;
 //import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.RobotDrive;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
 
 /**
@@ -17,7 +19,8 @@ public class Robot extends IterativeRobot {
 	
 	Controller controller;
 	Camera camera;
-	//AnalogGyro gyro;
+	AnalogGyro gyro;
+	Timer timer;
 	int autoLoopCounter;
 	double speedMultiplier = 1;
 	final double minSpeedMultiplier = 0.2;
@@ -28,6 +31,7 @@ public class Robot extends IterativeRobot {
      * This function is run when the robot is first started up and should be
      * used for any initialization code.
      */
+	@Override
     public void robotInit() {
     	
     	final int frontLeftMotor = 0;
@@ -38,7 +42,8 @@ public class Robot extends IterativeRobot {
     	myRobot = new RobotDrive(frontLeftMotor, rearLeftMotor, frontRightMotor, rearRightMotor);
     	controller = new Controller();
     	camera = new Camera();
-    	//gyro = new AnalogGyro(1);
+    	gyro = new AnalogGyro(1);
+    	timer = new Timer();
     	
     	//myRobot.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
     	//myRobot.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
@@ -49,6 +54,7 @@ public class Robot extends IterativeRobot {
     /**
      * This function is run once each time the robot enters autonomous mode
      */
+    @Override
     public void autonomousInit() {
     	autoLoopCounter = 0;
     }
@@ -56,6 +62,7 @@ public class Robot extends IterativeRobot {
     /**
      * This function is called periodically during autonomous
      */
+    @Override
     public void autonomousPeriodic() {
     	if(autoLoopCounter < 100) //Check if we've completed 100 loops (approximately 2 seconds)
 		{
@@ -69,25 +76,29 @@ public class Robot extends IterativeRobot {
     /**
      * This function is called once each time the robot enters tele-operated mode
      */
+    @Override
     public void teleopInit(){
     	
-    	//gyro.calibrate();
+    	timer.start();
     }
 
     /**
      * This function is called periodically during operator control
      */
+    @Override
     public void teleopPeriodic() {
     	
     	//controller.SetController();
     	SetMaxSpeed();
     	
-    	camera.Process();
+    	//camera.ReadBuffer();
+    	
+    	if(timer.hasPeriodPassed(10)) {
+    		gyro.calibrate();
+    	}
     	
     	//controller.Output();
-    	//PrintDriveValues();
     	
-    	//myRobot.arcadeDrive(controller.GetLeftJoyY(), controller.GetRightJoyX());
     	myRobot.mecanumDrive_Cartesian(controller.GetLeftJoyX(), controller.GetLeftJoyY(), controller.GetRightJoyX(), 0);
     	
     	//System.out.println(gyro.getAngle());
@@ -96,10 +107,12 @@ public class Robot extends IterativeRobot {
     /**
      * This function is called periodically during test mode
      */
+    @Override
     public void testPeriodic() {
     	LiveWindow.run();
     }
     
+    @Override
     public void disabledInit() {
     	
     }
@@ -116,13 +129,5 @@ public class Robot extends IterativeRobot {
     	if(controller.IsLeftBumpPressed() || controller.IsRightBumpPressed()) {
     		myRobot.setMaxOutput(speedMultiplier);
     	}
-    }
-    
-    private void PrintDriveValues() {
-    	//if(timer.hasPeriodPassed(1)) {
-	    	System.out.println("X: " + controller.GetLeftJoyX() +
-	    			", Y: " + controller.GetLeftJoyY() +
-	    			", R: " + controller.GetRightJoyX());
-    	//}
     }
 }
