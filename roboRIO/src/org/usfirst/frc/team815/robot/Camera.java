@@ -23,7 +23,6 @@ public class Camera {
 				ProcessBoxes(GetBoxes(message));
 				buffer = buffer.substring(buffer.indexOf('\\') + 1);
 			}
-			System.out.println("");
 		} else if (buffer.contains("/")) {
 			buffer = buffer.substring(buffer.indexOf('/'));
 		}
@@ -50,8 +49,29 @@ public class Camera {
 	}
 	
 	private void ProcessBoxes(ArrayList<Box> boxes) {
-		for(Box box : boxes) {
-			System.out.println(box.GetX() + " " + box.GetY() + " " + box.GetWidth() + " " + box.GetHeight());
+		if(boxes.size() == 2) {
+			String output = "";
+			int box1x = boxes.get(0).GetX();
+			int box2x = boxes.get(1).GetX();
+			int separation = Math.abs(box1x - box2x);
+			int midpoint = (box1x + box2x) / 2;
+			
+			if(separation < 160) {
+				output += "Get closer. ";
+			}
+			if(midpoint < 160) {
+				output += "Move right.";
+			}
+			if(midpoint > 160) {
+				output += "Move left.";
+			}
+			
+			System.out.println(output);
+		} else {
+			for(Box i : boxes) {
+				System.out.print("(" + i.GetX() + ", " + i.GetY() + ");  ");
+			}
+			System.out.println("");
 		}
 	}
 }

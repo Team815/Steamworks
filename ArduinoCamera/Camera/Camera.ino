@@ -53,8 +53,9 @@ void loop()
     
     // do this (print) every 50 frames because printing every
     // frame would bog down the Arduino
-    if (i%50==0)
+    if (i%20==0)
     {
+      ProcessBlocks(pixy.blocks, blocks);
       Serial.print('/');
       for (j=0; j<blocks; j++)
       {
@@ -63,6 +64,29 @@ void loop()
       Serial.print('\\');
     }
   }  
+}
+
+void ProcessBlocks(Block blocks[], uint16_t blockCount)
+{
+  if(blockCount > 2)
+  {
+    Block block1 = blocks[0];
+    Block block2 = blocks[1];
+
+    if(GetArea(block2) > GetArea(block1))
+    {
+      Swap(block1, block2);
+    }
+    for(int i = 2; i < blockCount; i++)
+    {
+     
+    }
+  }
+}
+
+int GetArea(Block block)
+{
+  return block.width * block.height;
 }
 
 void PrintBlock(Block block)
@@ -77,3 +101,9 @@ void PrintBlock(Block block)
   Serial.print(block.height); 
 }
 
+void Swap(Block& block1, Block& block2)
+{
+  Block temp = block1;
+  block1 = block2;
+  block2 = temp;
+}

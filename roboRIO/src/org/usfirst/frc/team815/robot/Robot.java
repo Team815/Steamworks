@@ -91,7 +91,7 @@ public class Robot extends IterativeRobot {
     	//controller.SetController();
     	SetMaxSpeed();
     	
-    	//camera.ReadBuffer();
+    	camera.ReadBuffer();
     	
     	if(timer.hasPeriodPassed(10)) {
     		gyro.calibrate();
@@ -99,7 +99,7 @@ public class Robot extends IterativeRobot {
     	
     	//controller.Output();
     	
-    	myRobot.mecanumDrive_Cartesian(controller.GetLeftJoyX(), controller.GetLeftJoyY(), controller.GetRightJoyX(), 0);
+    	//myRobot.mecanumDrive_Cartesian(controller.GetLeftJoyX(), controller.GetLeftJoyY(), controller.GetRightJoyX(), 0);
     	
     	//System.out.println(gyro.getAngle());
     }
