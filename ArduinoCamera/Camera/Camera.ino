@@ -56,37 +56,57 @@ void loop()
     if (i%20==0)
     {
       ProcessBlocks(pixy.blocks, blocks);
-      Serial.print('/');
-      for (j=0; j<blocks; j++)
-      {
-        PrintBlock(pixy.blocks[j]);
-      }
-      Serial.print('\\');
+      //Serial.print('/');
+//      for (j=0; j<blocks; j++)
+//      {
+//        PrintBlock(pixy.blocks[j]);
+//      }
+     //Serial.print('\\');
     }
   }  
 }
 
 void ProcessBlocks(Block blocks[], uint16_t blockCount)
 {
-  if(blockCount > 2)
-  {
+  if(blockCount >= 2) {
+    GetBiggestBlocks(blocks, blockCount);
     Block block1 = blocks[0];
     Block block2 = blocks[1];
-
-    if(GetArea(block2) > GetArea(block1))
-    {
-      Swap(block1, block2);
-    }
-    for(int i = 2; i < blockCount; i++)
-    {
-     
-    }
+    int midpoint = (block1.x + block2.x) / 2;
+    int distance = block1.x - block2.x;
+    distance = abs(distance);
+    Serial.println("#: " + String(blockCount) + ", D: " + String(distance) + ", M: " + String(midpoint));
   }
 }
 
 int GetArea(Block block)
 {
   return block.width * block.height;
+}
+
+void GetBiggestBlocks(Block blocks[], uint16_t blockCount)
+{
+  if(blockCount > 2)
+  {
+    if(GetArea(blocks[1]) > GetArea(blocks[0]))
+    {
+      Block temp = blocks[0];
+      blocks[0] = blocks[1];
+      blocks[1] = temp;
+    }
+    for(int i = 2; i < blockCount; i++)
+    {
+      if(GetArea(blocks[i]) > GetArea(blocks[0]))
+      {
+        blocks[1] = blocks[0];
+        blocks[0] = blocks[i];
+      }
+      else if(GetArea(blocks[i]) > GetArea(blocks[1]))
+      {
+        blocks[1] = blocks[i];
+      }
+    }
+  }
 }
 
 void PrintBlock(Block block)
@@ -99,11 +119,4 @@ void PrintBlock(Block block)
   Serial.print(block.width);
   Serial.print('h');
   Serial.print(block.height); 
-}
-
-void Swap(Block& block1, Block& block2)
-{
-  Block temp = block1;
-  block1 = block2;
-  block2 = temp;
 }
