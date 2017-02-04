@@ -32,7 +32,6 @@ Pixy pixy;
 void setup()
 {
   Serial.begin(9600);
-  Serial.print("Starting...\n");
 
   pixy.init();
 }
@@ -75,7 +74,7 @@ void ProcessBlocks(Block blocks[], uint16_t blockCount)
     int midpoint = (block1.x + block2.x) / 2;
     int distance = block1.x - block2.x;
     distance = abs(distance);
-    Serial.println("#: " + String(blockCount) + ", D: " + String(distance) + ", M: " + String(midpoint));
+    PrintMessage(midpoint, distance);
   }
 }
 
@@ -109,14 +108,29 @@ void GetBiggestBlocks(Block blocks[], uint16_t blockCount)
   }
 }
 
-void PrintBlock(Block block)
+void PrintMessage(int midpoint, int distance)
 {
-  Serial.print('x');
-  Serial.print(block.x);
-  Serial.print('y');
-  Serial.print(block.y);
-  Serial.print('w');
-  Serial.print(block.width);
-  Serial.print('h');
-  Serial.print(block.height); 
+  int idealMidpoint = 160;
+  int idealDistance = 150;
+
+  if(midpoint < idealMidpoint - 15)
+  {
+    Serial.print("1");
+  }
+  else if(midpoint > idealMidpoint + 15)
+  {
+    Serial.print("2");
+  }
+  else if(midpoint < idealMidpoint - 5)
+  {
+    Serial.print("3");
+  }
+  else if(midpoint > idealMidpoint + 5)
+  {
+    Serial.print("4");
+  }
+  else
+  {
+    Serial.print("5");
+  }
 }

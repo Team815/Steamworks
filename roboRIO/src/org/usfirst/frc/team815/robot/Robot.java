@@ -1,8 +1,12 @@
 package org.usfirst.frc.team815.robot;
 
+import org.usfirst.frc.team815.robot.Controller.AnalogName;
+
 import edu.wpi.first.wpilibj.AnalogGyro;
 //import edu.wpi.first.wpilibj.AnalogGyro;
 import edu.wpi.first.wpilibj.IterativeRobot;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.livewindow.LiveWindow;
@@ -16,16 +20,17 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow;
  */
 public class Robot extends IterativeRobot {
 	RobotDrive myRobot;
-	
-	Controller controller;
-	Camera camera;
-	AnalogGyro gyro;
-	Timer timer;
+	Controller controller = new Controller();
+	Relay lightRelay = new Relay(0, Relay.Direction.kForward);
+	Camera camera = new Camera();
+	Gyro gyro = new Gyro(1);
+	Timer timer = new Timer();
 	int autoLoopCounter;
-	double speedMultiplier = 1;
 	final double minSpeedMultiplier = 0.2;
 	final double maxSpeedMultiplier = 1;
 	final double speedMultiplierIncrement = 0.01;
+	double speedMultiplier = 1;
+	double direction = 0;
 	
     /**
      * This function is run when the robot is first started up and should be
@@ -40,15 +45,12 @@ public class Robot extends IterativeRobot {
     	final int rearRightMotor = 3;
     	  	
     	myRobot = new RobotDrive(frontLeftMotor, rearLeftMotor, frontRightMotor, rearRightMotor);
-    	controller = new Controller();
-    	camera = new Camera();
-    	gyro = new AnalogGyro(1);
-    	timer = new Timer();
     	
-    	//myRobot.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
-    	//myRobot.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
     	myRobot.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
     	myRobot.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
+    	
+    	lightRelay.set(Relay.Value.kOn);
+    	gyro.Calibrate();
     }
     
     /**
@@ -79,7 +81,8 @@ public class Robot extends IterativeRobot {
     @Override
     public void teleopInit(){
     	
-    	timer.start();
+//    	myRobot.setMaxOutput(minSpeedMultiplier);
+//    	timer.start();
     }
 
     /**
@@ -88,20 +91,35 @@ public class Robot extends IterativeRobot {
     @Override
     public void teleopPeriodic() {
     	
-    	//controller.SetController();
-    	SetMaxSpeed();
+    	controller.Update();
     	
-    	camera.ReadBuffer();
-    	
-    	if(timer.hasPeriodPassed(10)) {
-    		gyro.calibrate();
+    	if(controller.WasClicked(Controller.ButtonName.Select)) {
+    		gyro.Calibrate();
     	}
     	
-    	//controller.Output();
+    	if(controller.WasClicked(Controller.ButtonName.X) && controller.IsToggled(Controller.ButtonName.X)) {
+    		camera.StartCamera();
+    	}
     	
-    	//myRobot.mecanumDrive_Cartesian(controller.GetLeftJoyX(), controller.GetLeftJoyY(), controller.GetRightJoyX(), 0);
+    	if(controller.JustZeroed(AnalogName.RightJoyX)){
+    		gyro.ResetTargetAngle();
+    	}
     	
-    	//System.out.println(gyro.getAngle());
+    	gyro.Update(controller.GetValue(Controller.AnalogName.RightJoyX) != 0);
+    	
+    	SetMaxSpeed();
+    	
+    	if(controller.IsToggled(Controller.ButtonName.X)) {
+    		Align(camera.ReadBuffer());
+    	} else {
+    		double x = controller.GetValue(Controller.AnalogName.LeftJoyX);
+    		double y = controller.GetValue(Controller.AnalogName.LeftJoyY);
+    		double rotation = controller.GetValue(AnalogName.RightJoyX);
+    		rotation = rotation == 0 ? gyro.GetCompensation() : rotation;
+    		double gyroValue = controller.IsToggled(Controller.ButtonName.A) ? 0 : gyro.GetAngle();
+    		
+    		myRobot.mecanumDrive_Cartesian(x, y, rotation, gyroValue);
+    	}
     }
     
     /**
@@ -118,16 +136,27 @@ public class Robot extends IterativeRobot {
     }
     
     private void SetMaxSpeed() {
-    	if(controller.IsLeftBumpPressed() && speedMultiplier > minSpeedMultiplier) {
+    	double lastSpeedMultiplier = speedMultiplier;
+    	if(controller.IsPressed(Controller.ButtonName.LB) && speedMultiplier > minSpeedMultiplier) {
     		speedMultiplier -= speedMultiplierIncrement;
-    	} else if (controller.IsRightBumpPressed() && speedMultiplier < maxSpeedMultiplier) {
+    	} else if (controller.IsPressed(Controller.ButtonName.RB) && speedMultiplier < maxSpeedMultiplier) {
     		speedMultiplier += speedMultiplierIncrement;
     	}
     	
-    	
-    	
-    	if(controller.IsLeftBumpPressed() || controller.IsRightBumpPressed()) {
+    	if(speedMultiplier != lastSpeedMultiplier) {
     		myRobot.setMaxOutput(speedMultiplier);
     	}
+    }
+    
+    private void Align(char message) {
+    	//System.out.println(message);
+    	if (message == '9' || message == '3') {
+    		direction = 0;
+    	} else if(message == '2' || message == '1') {
+    		direction = -0.2;
+    	} else if (message == '4' || message == '5') {
+    		direction = 0.2;
+    	}
+    	myRobot.mecanumDrive_Cartesian(direction, 0, gyro.GetCompensation(), 0);
     }
 }
