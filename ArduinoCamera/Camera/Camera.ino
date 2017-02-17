@@ -1,43 +1,15 @@
-//
-// begin license header
-//
-// This file is part of Pixy CMUcam5 or "Pixy" for short
-//
-// All Pixy source code is provided under the terms of the
-// GNU General Public License v2 (http://www.gnu.org/licenses/gpl-2.0.html).
-// Those wishing to use Pixy source code, software and/or
-// technologies under different licensing terms should contact us at
-// cmucam@cs.cmu.edu. Such licensing terms are available for
-// all portions of the Pixy codebase presented here.
-//
-// end license header
-//
-// This sketch is a good place to start if you're just getting started with 
-// Pixy and Arduino.  This program simply prints the detected object blocks 
-// (including color codes) through the serial console.  It uses the Arduino's 
-// ICSP port.  For more information go here:
-//
-// http://cmucam.org/projects/cmucam5/wiki/Hooking_up_Pixy_to_a_Microcontroller_(like_an_Arduino)
-//
-// It prints the detected blocks once per second because printing all of the 
-// blocks for all 50 frames per second would overwhelm the Arduino's serial port.
-//
-   
 #include <SPI.h>  
 #include <Pixy.h>
 
-// This is the main Pixy object 
 Pixy pixy;
 
-void setup()
-{
+void setup() {
   Serial.begin(9600);
 
   pixy.init();
 }
 
-void loop()
-{ 
+void loop() { 
   static int i = 0;
   int j;
   uint16_t blocks;
@@ -46,91 +18,73 @@ void loop()
   blocks = pixy.getBlocks();
   
   // If there are detect blocks, print them!
-  if (blocks)
-  {
+  if (blocks) {
     i++;
-    
-    // do this (print) every 50 frames because printing every
-    // frame would bog down the Arduino
-    if (i%20==0)
-    {
+    if (i%10==0) {
       ProcessBlocks(pixy.blocks, blocks);
-      //Serial.print('/');
-//      for (j=0; j<blocks; j++)
-//      {
-//        PrintBlock(pixy.blocks[j]);
-//      }
-     //Serial.print('\\');
     }
   }  
 }
 
-void ProcessBlocks(Block blocks[], uint16_t blockCount)
-{
+void ProcessBlocks(Block blocks[], uint16_t blockCount) {
   if(blockCount >= 2) {
     GetBiggestBlocks(blocks, blockCount);
-    Block block1 = blocks[0];
-    Block block2 = blocks[1];
-    int midpoint = (block1.x + block2.x) / 2;
-    int distance = block1.x - block2.x;
-    distance = abs(distance);
-    PrintMessage(midpoint, distance);
+    Block blockLeft = blocks[0].x < blocks[1].x ? blocks[0] : blocks[1];
+    Block blockRight = blocks[0].x > blocks[1].x ? blocks[0] : blocks[1];
+    int midpoint = (blockLeft.x + blockRight.x) / 2;
+    int distance = blockRight.x - blockLeft.x;
+    PrintMessage(midpoint, distance, blockLeft.width, blockRight.width);
   }
 }
 
-int GetArea(Block block)
-{
+int GetArea(Block block) {
   return block.width * block.height;
 }
 
-void GetBiggestBlocks(Block blocks[], uint16_t blockCount)
-{
-  if(blockCount > 2)
-  {
-    if(GetArea(blocks[1]) > GetArea(blocks[0]))
-    {
+void GetBiggestBlocks(Block blocks[], uint16_t blockCount) {
+  if(blockCount > 2) {
+    if(GetArea(blocks[1]) > GetArea(blocks[0])) {
       Block temp = blocks[0];
       blocks[0] = blocks[1];
       blocks[1] = temp;
     }
-    for(int i = 2; i < blockCount; i++)
-    {
-      if(GetArea(blocks[i]) > GetArea(blocks[0]))
-      {
+    for(int i = 2; i < blockCount; i++) {
+      if(GetArea(blocks[i]) > GetArea(blocks[0])) {
         blocks[1] = blocks[0];
         blocks[0] = blocks[i];
-      }
-      else if(GetArea(blocks[i]) > GetArea(blocks[1]))
-      {
+      } else if(GetArea(blocks[i]) > GetArea(blocks[1])) {
         blocks[1] = blocks[i];
       }
     }
   }
 }
 
-void PrintMessage(int midpoint, int distance)
-{
-  int idealMidpoint = 160;
-  int idealDistance = 150;
+void PrintMessage(int midpoint, int distance, int widthLeft, int widthRight) {
+  int borderWidth = 20;
+  int leftEdge = midpoint - distance / 2.0 - widthLeft / 2;
+  int rightEdge = 320 - midpoint - distance / 2.0 - widthRight / 2;
+  int angle;
+  if(leftEdge <= borderWidth) {
+    angle = 180;
+  } else if(rightEdge <= borderWidth) {
+    angle = 0;
+  } else {
+    int cameraEdge = rightEdge + leftEdge - 20;
+    double percent = (leftEdge - 20.0) / (cameraEdge - 20.0);
+    angle = 180 - percent * 180;
+  }
 
-  if(midpoint < idealMidpoint - 15)
-  {
-    Serial.print("1");
+  if(distance >= 60) {
+    if(angle < 85) {
+      angle = 0;
+    } else if(angle > 95) {
+      angle = 180;
+    } else {
+      Serial.print("<a>");
+      return;
+    }
   }
-  else if(midpoint > idealMidpoint + 15)
-  {
-    Serial.print("2");
-  }
-  else if(midpoint < idealMidpoint - 5)
-  {
-    Serial.print("3");
-  }
-  else if(midpoint > idealMidpoint + 5)
-  {
-    Serial.print("4");
-  }
-  else
-  {
-    Serial.print("5");
-  }
+  Serial.print('<');
+  Serial.print(angle);
+  Serial.print('>');
 }

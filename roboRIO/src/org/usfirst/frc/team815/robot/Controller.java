@@ -55,6 +55,7 @@ public class Controller {
 	
 	private ArrayList<Button> buttons = new ArrayList<Button>();
 	private ArrayList<Analog> analogs = new ArrayList<Analog>();
+	private Dpad dpad = new Dpad();
 	
 	public Controller() {
 		for(ButtonName i : ButtonName.values()) {
@@ -75,6 +76,8 @@ public class Controller {
 		for(Analog i : analogs) {
 			i.Update(stick, analogThreshold);
 		}
+		
+		dpad.Update(stick);
 	}
 	
 	public boolean IsPressed(ButtonName button) {
@@ -95,5 +98,13 @@ public class Controller {
 	
 	public boolean JustZeroed(AnalogName analog) {
 		return analogs.get(analog.GetIndex()).JustZeroed();
+	}
+	
+	public Dpad.Direction GetDpadDirection() {
+		return dpad.GetDirection();
+	}
+	
+	public boolean WasDpadDirectionClicked(Dpad.Direction directionIn) {
+		return dpad.WasDirectionClicked(directionIn);
 	}
 }

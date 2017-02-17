@@ -7,17 +7,19 @@ public class Gyro {
 	AnalogGyro gyro;
 	double rotationCompensation;
 	double targetAngle = 0;
+	double playerAngle = 0;
 	double zeroedTime = 0.2;
 	Timer timer = new Timer();
 	boolean timerRunning = false;
 	
 	public Gyro(int port) {
 		gyro = new AnalogGyro(port);
+		gyro.calibrate();
 	}
 	
-	public void Calibrate() {
-		gyro.calibrate();
-		targetAngle = gyro.getAngle();
+	public void SetPlayerAngle() {
+		playerAngle = -gyro.getAngle();
+		targetAngle = GetAngle();
 	}
 	
 	public void ResetTargetAngle() {
@@ -37,14 +39,18 @@ public class Gyro {
 			rotationCompensation = 0;
 		} else if (timerRunning) {
 			if(timer.get() > zeroedTime) {
-				targetAngle = gyro.getAngle();
+				targetAngle = GetAngle();
 				timer.stop();
 				timerRunning = false;
 			}
 		} else {
-			double sign = Math.signum(targetAngle - gyro.getAngle());
-			rotationCompensation = sign * Math.min(.1, Math.abs(targetAngle - gyro.getAngle()) / 10);
+			double sign = Math.signum(targetAngle - GetAngle());
+			rotationCompensation = sign * Math.min(.2, Math.abs(targetAngle - GetAngle()) / 20.0);
 		}
+	}
+	
+	public void SetTargetAngle(double angleIn) {
+		targetAngle = angleIn;
 	}
 	
 	public double GetCompensation() {
@@ -52,6 +58,6 @@ public class Gyro {
 	}
 	
 	public double GetAngle() {
-		return gyro.getAngle();
+		return gyro.getAngle() + playerAngle;
 	}
 }
