@@ -20,7 +20,7 @@ void loop() {
   // If there are detect blocks, print them!
   if (blocks) {
     i++;
-    if (i%10==0) {
+    if (i%5==0) {
       ProcessBlocks(pixy.blocks, blocks);
     }
   }  

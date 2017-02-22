@@ -48,10 +48,9 @@ public class Controller {
 		}
 	}
 	
-	private final int joystickPort = 0;
 	private final double analogThreshold = 0.1;
 	
-	private Joystick stick = new Joystick(joystickPort);
+	private Joystick stick = new Joystick(0);
 	
 	private ArrayList<Button> buttons = new ArrayList<Button>();
 	private ArrayList<Analog> analogs = new ArrayList<Analog>();

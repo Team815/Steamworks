@@ -1,7 +1,5 @@
 package org.usfirst.frc.team815.robot;
 
-import javax.naming.NameAlreadyBoundException;
-
 import edu.wpi.first.wpilibj.Joystick;
 
 public class Button {

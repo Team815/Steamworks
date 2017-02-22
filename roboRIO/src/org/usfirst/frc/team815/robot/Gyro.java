@@ -60,4 +60,8 @@ public class Gyro {
 	public double GetAngle() {
 		return gyro.getAngle() + playerAngle;
 	}
+	
+	public void Calibrate() {
+		gyro.calibrate();
+	}
 }

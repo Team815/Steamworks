@@ -23,6 +23,7 @@ public class Camera {
 	public int ReadBuffer() {
 		buffer += serialPort.readString();
 		if(buffer.length() > 0) {
+			System.out.println(buffer);
 			if(buffer.charAt(0) != '<') {
 				if(buffer.contains("<")) {
 					buffer = buffer.substring(buffer.indexOf('<'));
