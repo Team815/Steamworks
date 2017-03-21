@@ -4,17 +4,17 @@ import com.ctre.CANTalon;
 
 public class BallPickup {
 	enum BPState {
-		Suck(1),
+		Suck(.7),
 		Blow(-1),
 		Off(0);
 		
-		private int value;
+		private double value;
 		
-		private BPState(int valueIn) {
+		private BPState(double valueIn) {
 			value = valueIn;
 		}
 		
-		public int GetValue() {
+		public double GetValue() {
 			return value;
 		}
 	}

@@ -24,6 +24,10 @@ public class Button {
 		return isPressed && !wasPressed;
 	}
 	
+	public boolean WasReleased() {
+		return wasPressed && !isPressed;
+	}
+	
 	public boolean IsToggled() {
 		return toggle;
 	}

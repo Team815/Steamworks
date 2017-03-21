@@ -1,12 +1,17 @@
 package org.usfirst.frc.team815.robot;
 
+import java.util.Scanner;
+
 import org.usfirst.frc.team815.robot.Autonomous.State;
 import org.usfirst.frc.team815.robot.BallPickup.BPState;
 import org.usfirst.frc.team815.robot.Controller.AnalogName;
 import org.usfirst.frc.team815.robot.Controller.ButtonName;
 import org.usfirst.frc.team815.robot.Dpad.Direction;
+import org.usfirst.frc.team815.robot.Switchboard.PotName;
 
 import com.ctre.CANTalon;
+
+import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.IterativeRobot;
 import edu.wpi.first.wpilibj.Relay;
 import edu.wpi.first.wpilibj.RobotDrive;
@@ -21,21 +26,22 @@ import edu.wpi.first.wpilibj.livewindow.LiveWindow;
  */
 public class Robot extends IterativeRobot {
 	RobotDrive robot;
-	Controller controller = new Controller();
-	Switchboard switchboard = new Switchboard();
+	Controller controller0 = new Controller(0);
+	Controller controller1 = new Controller(1);
+	Controller controllerShoot;
+	Controller controllerLift;
+	Controller controllerPickup;
+	Controller controllerDrive;
+	Switchboard switchboard = new Switchboard(2);
 	Relay lightRelay = new Relay(0, Relay.Direction.kForward);
 	Gyro gyro = new Gyro(1);
 	Autonomous auto = new Autonomous(gyro, lightRelay);
-	Lift lift = new Lift(30);
-	Shooter shooter = new Shooter(3);
+	Lift lift = new Lift(30, 31);
+	Shooter shooter = new Shooter(3, 2);
 	BallPickup ballpickup = new BallPickup(1);
 	CANTalon agitator = new CANTalon(2);
-	final double minSpeedMultiplier = 0.2;
-	final double maxSpeedMultiplier = 1;
-	final double speedMultiplierIncrement = 0.01;
 	double speedMultiplier = 1;
-	double horizontal = 0;
-	double vertical= 0;
+	//CameraServer server = CameraServer.getInstance();
 	
     /**
      * This function is run when the robot is first started up and should be
@@ -52,6 +58,8 @@ public class Robot extends IterativeRobot {
     	talonRearRight.setInverted(true);
     	  	
     	robot = new RobotDrive(talonFrontLeft, talonRearLeft, talonFrontRight, talonRearRight);
+    	
+        //server.startAutomaticCapture(0);
     }
     
     /**
@@ -92,6 +100,7 @@ public class Robot extends IterativeRobot {
     	//System.out.println("Target Angle:" + gyro.GetTargetAngle() + ", Angle: " + gyro.GetAngle() + ", Compensation: " + gyro.GetCompensation());
     	
     	robot.mecanumDrive_Cartesian(horizontal, vertical, rotation, gyroValue);
+    	//Drive(horizontal, vertical, rotation, gyroValue);
     }
     
     /**
@@ -103,6 +112,18 @@ public class Robot extends IterativeRobot {
     	gyro.ResetTargetAngle();
     	lightRelay.set(Relay.Value.kOff);
     	//agitator.set(1);
+    	
+    	controllerDrive = controller0;
+    	controllerPickup =  controller0;
+    	
+    	if(controller0.IsToggled(ButtonName.Start)) {
+    		controllerShoot = controller0;
+        	controllerLift = controller0;
+    	} else {
+    		controllerShoot = controller1;
+        	controllerLift = controller1;
+    	}
+    	
     }
 
     /**
@@ -111,47 +132,103 @@ public class Robot extends IterativeRobot {
     @Override
     public void teleopPeriodic() {
     	
-    	controller.Update();
+    	controller0.Update();
+    	controller1.Update();
+    	switchboard.Update();
+    	
+    	if(controller0.WasClicked(ButtonName.Start)) {
+    		if(controller0.IsToggled(ButtonName.Start)) {
+        		controllerShoot = controller0;
+            	controllerLift = controller0;
+        	} else {
+        		controllerShoot = controller1;
+            	controllerLift = controller1;
+        	}
+    	}
     	
     	// Ball Pickup Section
-    	if(controller.WasDpadDirectionClicked(Direction.Up)) {
+    	
+    	if(controllerPickup.WasDpadDirectionClicked(Direction.Up)) {
     		ballpickup.Toggle(BPState.Suck);
-    	} else if(controller.WasDpadDirectionClicked(Direction.Down)) {
+    	} else if(controllerPickup.WasDpadDirectionClicked(Direction.Down)) {
     		ballpickup.Toggle(BPState.Blow);
-    	} else if(controller.WasDpadDirectionClicked(Direction.Right)) {
+    	} else if(controllerPickup.WasDpadDirectionClicked(Direction.Right)) {
     		ballpickup.Toggle(BPState.Off);
     	}
     	
     	// Lift Section
-    	if(controller.WasClicked(ButtonName.B)) {
+    	
+    	if(controllerLift.WasClicked(ButtonName.Y)) {
     		lift.StartClimb();
     	}
     	
-    	if(controller.IsPressed(ButtonName.B)) {
+    	if(controllerLift.WasReleased(ButtonName.Y)) {
+    		lift.StopClimb();
+    	}
+    	
+    	if(controllerLift.IsPressed(ButtonName.Y)) {
     		lift.Climb();
+    	}
+    	
+    	if(controllerLift.GetValue(AnalogName.RightTrigger) != 0 || controllerLift.JustZeroed(AnalogName.RightTrigger)){
+    		lift.SetSpeed(controllerLift.GetValue(AnalogName.RightTrigger));
     	}
     	
     	// Shooter Section
     	
+    	shooter.SetSpeeds(switchboard.GetAnalog(PotName.TopPot), switchboard.GetAnalog(PotName.BottomPot));
+    	
+    	if(controllerShoot.IsPressed(ButtonName.A)) {
+    		shooter.SimpleUpdateShooter();
+    	}
+    	
+    	if(controllerShoot.WasReleased(ButtonName.A)) {
+    		shooter.SimpleStopShooter();
+    	}
+    	
+    	if(controllerShoot.IsPressed(ButtonName.LB)) {
+    		shooter.SimpleUpdateAgitator();
+    	}
+    	
+    	if(controllerShoot.WasReleased(ButtonName.LB)) {
+    		shooter.SimpleStopAgitator();
+    	}
+    	
+    	if(controllerShoot.WasClicked(ButtonName.B)) {
+    		shooter.startShooter();
+    	}
+    	
+    	if(controllerShoot.IsPressed(ButtonName.B)) {
+    		shooter.UpdateShooter();
+    	}
+    	
+    	if(controllerShoot.WasReleased(ButtonName.B)) {
+    		shooter.stopShooter();
+    	}
+    	
     	// Gyro Section
-    	if(controller.WasClicked(ButtonName.Y)) {
+    	
+    	if(controllerDrive.WasClicked(ButtonName.B)) {
     		gyro.SetPlayerAngle();
     	}
     	
-    	if(controller.WasClicked(ButtonName.Select)) {
+    	/*
+    	if(controllerDrive.WasClicked(ButtonName.Select)) {
     		gyro.Calibrate();
     		gyro.SetPlayerAngle();
     	}
+    	*/
     	
-    	if(controller.JustZeroed(AnalogName.RightJoyX)){
+    	if(controllerDrive.JustZeroed(AnalogName.RightJoyX)){
     		gyro.ResetTargetAngle();
     	}
     	
-    	gyro.Update(controller.GetValue(AnalogName.RightJoyX) != 0);
+    	gyro.Update(controllerDrive.GetValue(AnalogName.RightJoyX) != 0);
     	
     	// Auto Align Section
-    	if(controller.WasClicked(ButtonName.X)) {
-    		if(controller.IsToggled(ButtonName.X)) {
+    	
+    	if(controllerDrive.WasClicked(ButtonName.X)) {
+    		if(controllerDrive.IsToggled(ButtonName.X)) {
     			auto.StartAuto(State.Aligning);
     		} else {
     			lightRelay.set(Relay.Value.kOff);
@@ -159,34 +236,37 @@ public class Robot extends IterativeRobot {
     	}
     	
     	// Speed Control Section
-    	if(controller.WasClicked(ButtonName.RB) || controller.WasClicked(ButtonName.LB)) {
+    	
+    	if(controllerDrive.IsPressed(ButtonName.RB) || controllerDrive.IsPressed(ButtonName.LB)) {
     		SetMaxSpeed();
     	}
     	
     	
     	// Drive Section
+    	
     	double horizontal = 0;
     	double vertical = 0;
     	double rotation = 0;
     	double gyroValue = 0;
     	
-    	if(!controller.IsToggled(ButtonName.Start)) {
-	    	if(controller.IsToggled(ButtonName.X)) {
+    	if(!controllerDrive.IsToggled(ButtonName.Select)) {
+	    	if(controllerDrive.IsToggled(ButtonName.X)) {
 	    		auto.Update();
     			horizontal = auto.GetHorizontal();
 	    		vertical = auto.GetVertical();
 	    		rotation = gyro.GetCompensation();
 	    		gyroValue = 0;
 	    	} else {
-	    		horizontal = -controller.GetValue(AnalogName.LeftJoyX);
-	    		vertical = -controller.GetValue(AnalogName.LeftJoyY);
-	    		rotation = controller.GetValue(AnalogName.RightJoyX);
+	    		horizontal = -controllerDrive.GetValue(AnalogName.LeftJoyX);
+	    		vertical = -controllerDrive.GetValue(AnalogName.LeftJoyY);
+	    		rotation = controllerDrive.GetValue(AnalogName.RightJoyX);
 	    		rotation = rotation == 0 ? gyro.GetCompensation() : rotation;
-	    		gyroValue = controller.IsToggled(ButtonName.A) ? 0 : gyro.GetAngle();
+	    		gyroValue = controllerDrive.IsToggled(ButtonName.A) ? 0 : gyro.GetAngle();
 	    	}
     	}
     	
     	robot.mecanumDrive_Cartesian(horizontal, vertical, rotation, gyroValue);
+    	//Drive(horizontal, vertical, rotation, gyroValue);
     }
     
     /**
@@ -203,15 +283,38 @@ public class Robot extends IterativeRobot {
     }
     
     private void SetMaxSpeed() {
-    	double lastSpeedMultiplier = speedMultiplier;
-    	if(controller.IsPressed(ButtonName.LB) && speedMultiplier > minSpeedMultiplier) {
-    		speedMultiplier -= speedMultiplierIncrement;
-    	} else if (controller.IsPressed(ButtonName.RB) && speedMultiplier < maxSpeedMultiplier) {
-    		speedMultiplier += speedMultiplierIncrement;
+    	final double MIN_MULTIPLIER = 0.2;
+    	final double MAX_MULTIPLIER = 1;
+    	final double MULTIPLIER_INCREMENT = 0.01;
+    	if(controllerDrive.IsPressed(ButtonName.LB) && speedMultiplier > MIN_MULTIPLIER) {
+    		speedMultiplier -= MULTIPLIER_INCREMENT;
+    	} else if (controllerDrive.IsPressed(ButtonName.RB) && speedMultiplier < MAX_MULTIPLIER) {
+    		speedMultiplier += MULTIPLIER_INCREMENT;
     	}
     	
-    	if(speedMultiplier != lastSpeedMultiplier) {
-    		robot.setMaxOutput(speedMultiplier);
-    	}
+		robot.setMaxOutput(speedMultiplier);
+    }
+    
+    private void Drive(double horizontal, double vertical, double rotation, double gyroValue) {
+    	final double QUARTER = Math.PI / 2;
+		final double MAX_MULTIPLIER = 2;
+		
+		double horizontalSign = Math.signum(horizontal);
+		double verticalSign = Math.signum(vertical);
+		
+    	double magnitude = Math.sqrt(Math.pow(horizontal, 2) + Math.pow(vertical, 2));
+    	double angle = horizontal == 0 ? QUARTER : Math.atan(Math.abs(vertical) / Math.abs(horizontal));
+    	angle = QUARTER - angle;
+    	double percent = angle / QUARTER;
+    	double multiplier = percent * (MAX_MULTIPLIER - 1) + 1;
+    	
+    	magnitude *= multiplier;
+    	
+    	horizontal = Math.min(1, magnitude * Math.sin(angle));
+    	horizontal *= horizontalSign;
+    	vertical = Math.min(1, magnitude * Math.cos(angle));
+    	vertical *= verticalSign;
+
+    	robot.mecanumDrive_Cartesian(horizontal, vertical, rotation, gyroValue);
     }
 }

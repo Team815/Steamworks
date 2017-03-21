@@ -50,13 +50,16 @@ public class Controller {
 	
 	private final double analogThreshold = 0.1;
 	
-	private Joystick stick = new Joystick(0);
+	private Joystick stick;
 	
 	private ArrayList<Button> buttons = new ArrayList<Button>();
 	private ArrayList<Analog> analogs = new ArrayList<Analog>();
 	private Dpad dpad = new Dpad();
 	
-	public Controller() {
+	public Controller(int port) {
+		
+		stick = new Joystick(port);
+		
 		for(ButtonName i : ButtonName.values()) {
 			buttons.add(new Button(i.GetIndex()));
 		}
@@ -85,6 +88,10 @@ public class Controller {
 	
 	public boolean WasClicked(ButtonName button) {
 		return buttons.get(button.GetIndex()-1).WasClicked();
+	}
+	
+	public boolean WasReleased(ButtonName button) {
+		return buttons.get(button.GetIndex()-1).WasReleased();
 	}
 	
 	public boolean IsToggled(ButtonName button) {

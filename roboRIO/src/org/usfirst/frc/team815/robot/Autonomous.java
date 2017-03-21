@@ -17,7 +17,6 @@ public class Autonomous {
 	Relay lightRelay;
 	private double horizontal = 0;
 	private double vertical = 0;
-	private double timerLimit = 2;
 	private double startingAngle = 0;
 	private boolean turningLeft;
 	private Timer timer = new Timer();
@@ -52,19 +51,23 @@ public class Autonomous {
 	}
 	
 	public void GetIntoPosition() {
+		final double POSITION_SPEED = 1;
+		final double TIMER_LIMIT = 0.6;
 		double angle = turningLeft ? 60 : -60;
-		if(timer.get() > timerLimit) {
+		if(timer.get() > TIMER_LIMIT) {
 			timer.stop();
 			state = State.Aligning;
 			camera.StartCamera();
 			lightRelay.set(Relay.Value.kOn);
 		} else {
-			vertical = 0.3;
-			gyro.SetTargetAngle(startingAngle + timer.get() * -angle / timerLimit);
+			vertical = POSITION_SPEED;
+			horizontal = -Math.signum(angle) * POSITION_SPEED / 2;
+			gyro.SetTargetAngle(startingAngle + timer.get() * -angle / TIMER_LIMIT);
 		}
 	}
 	
 	public void Align(int angle) {
+		final double ALIGN_SPEED = 0.3;
 		if(angle == -3) {
 			horizontal = 0;
     		vertical = 0;
@@ -77,15 +80,17 @@ public class Autonomous {
     		horizontal = 0;
     		vertical = 0;
     	} else if (angle >= 0) {
-    		horizontal = -0.3 * Math.cos(angle * 2 * Math.PI / 360);
-    		vertical = 0.3 * Math.sin(angle * 2 * Math.PI / 360);
+    		horizontal = -ALIGN_SPEED * Math.cos(angle * 2 * Math.PI / 360);
+    		vertical = ALIGN_SPEED * Math.sin(angle * 2 * Math.PI / 360);
     	}
 	}
 	
 	public void Insert() {
+		final double INSERT_SPEED = .5;
+		final double INSERT_TIME = .5;
 		horizontal = 0;
-		vertical =  0.3;
-		if(timer.get() >= 0.2) {
+		vertical =  INSERT_SPEED;
+		if(timer.get() >= INSERT_TIME) {
 			timer.stop();
 			state = State.Done;
 		}

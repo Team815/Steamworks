@@ -1,4 +1,4 @@
-#include <SPI.h>  
+//#include <SPI.h>  
 #include <Pixy.h>
 
 Pixy pixy;
@@ -60,6 +60,7 @@ void GetBiggestBlocks(Block blocks[], uint16_t blockCount) {
 }
 
 void PrintMessage(int midpoint, int distance, int widthLeft, int widthRight) {
+  const int TARGET_DISTANCE = 60;
   int borderWidth = 20;
   int leftEdge = midpoint - distance / 2.0 - widthLeft / 2;
   int rightEdge = 320 - midpoint - distance / 2.0 - widthRight / 2;
@@ -72,9 +73,14 @@ void PrintMessage(int midpoint, int distance, int widthLeft, int widthRight) {
     int cameraEdge = rightEdge + leftEdge - 20;
     double percent = (leftEdge - 20.0) / (cameraEdge - 20.0);
     angle = 180 - percent * 180;
+    if(angle < 90) {
+      angle = max(0, angle - (90 - angle));
+    } else if (angle > 90) {
+      angle = min(180, angle + (angle - 90));
+    }
   }
 
-  if(distance >= 60) {
+  if(distance >= TARGET_DISTANCE) {
     if(angle < 85) {
       angle = 0;
     } else if(angle > 95) {
